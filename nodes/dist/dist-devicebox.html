@@ -1,0 +1,34 @@
+<script type="text/x-red" data-template-name="devicebox">
+     <div class="form-row">
+         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+         <input type="text" id="node-input-name" placeholder="Name">
+     </div>
+     <div class="form-row">
+        <label for="node-input-deviceId"><i class="icon-tag"></i> Device ID</label>
+         <input type="text" id="node-input-deviceId" placeholder="Device ID">
+     </div>
+     <div class="form-tips">See the Info tab for more info.</div>
+ </script>
+
+<script type="text/x-red" data-help-name="devicebox">
+     <p>This node is a device node indicating the device that a node runs on</p>
+</script>
+
+<script type="text/javascript">
+RED.nodes.registerType('devicebox', {
+    category: 'config', // config nodes do not appear in the palette -- we render device boxes differentlycolor:"#fff0f0",
+    defaults: {
+        name: {value: ""},
+        deviceId: {value: "server"}
+    },
+    inputs: 0,
+    outputs: 0,
+    icon: "",
+    label: function () {
+        return "Device Id: " + this.deviceId;
+    },
+    labelStyle: function () {
+        return "node_label_unknown";
+    }
+});
+</script>
