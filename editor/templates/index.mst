@@ -28,6 +28,38 @@
 <link href="vendor/jquery/css/smoothness/jquery-ui-1.10.3.custom.min.css" rel="stylesheet" media="screen">
 <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
 <link rel="stylesheet" href="vendor/vendor.css">
+<style>
+#tools .button {
+    line-height: 22px;
+    display: inline-block;
+    font-size: 14px;
+    padding: 4px 12px;
+    text-decoration: none;
+    border-radius: 3px;
+    margin: auto 10px;
+    vertical-align: middle;
+}
+
+.device-lasso {
+    stroke-width: 2px;
+    stroke: #0A0A0A;
+    fill: rgba(128,128,128,0.1);
+    stroke-dasharray: 10 5;
+}
+
+#tools {
+    border: 1px solid #000;
+    border-radius: 3px;
+}
+
+.devbox_selected {
+    stroke: #ff7f0e;
+}
+
+.dev-box-handle {
+    fill: rgba(128,128,128,0.2);
+}
+</style>
 <link rel="stylesheet" href="red/style.min.css">
 {{#page.css}}
 <link rel="stylesheet" href="{{.}}">
@@ -186,6 +218,7 @@
 <script src="vendor/jsonata/jsonata.min.js"></script>
 <script src="vendor/ace/ace.js"></script>
 <script src="vendor/ace/ext-language_tools.js"></script>
+<script src="js/ui/tools.js"></script>
 <script src="{{ asset.red }}"></script>
 <script src="{{ asset.main }}"></script>
 
