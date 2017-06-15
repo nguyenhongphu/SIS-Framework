@@ -23,5 +23,7 @@ RED.state = {
     EXPORT: 6,
     IMPORT: 7,
     IMPORT_DRAGGING: 8,
-    QUICK_JOINING: 9
+    QUICK_JOINING: 9,
+    HOST_DRAWING: 10,
 }
+
