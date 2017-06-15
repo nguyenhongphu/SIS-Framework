@@ -19,11 +19,11 @@
         "node-red-pi": "bin/node-red-pi"
     },
     "contributors": [
-        {"name": "Nick O'Leary"},
-        {"name": "Dave Conway-Jones"}
+        {"name": "The node-red team as baseline contributor"},
+        {"name": "Nicolas Ferry"}
     ],
     "keywords": [
-        "editor", "messaging", "iot", "flow"
+        "editor", "messaging", "iot", "flow", "fog", "Cloud"
     ],
     "dependencies": {
         "basic-auth": "1.1.0",
