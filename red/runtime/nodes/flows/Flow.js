@@ -79,39 +79,51 @@ function Flow(global,flow) {
             }
         }
 
+
         for (id in flow.nodes) {
             if (flow.nodes.hasOwnProperty(id)) {
                 node = flow.nodes[id];
-                if(node.type.indexOf("thingml") >= 0) {//in the worst case can test on deviceId to make it generic
-                    compileThingML(node);
-                } else if(node.type.indexOf("docker") >= 0){
-                    buildAndDeploy(node);
-                }else{
-                    if (!node.subflow) {
-                        if (!activeNodes[id]) {
-                            newNode = createNode(node.type, node);
-                            if (newNode) {
-                                activeNodes[id] = newNode;
-                            }
+
+                var found=false;
+                findModules({//Should not be in the for ... next step
+                    folder: './nodes/core/external',
+                    filter: function(str){
+                        if(str.indexOf("-engine") >= 0) return true; //only load the files with "-engine" in the name
+                    }, // either undefined or a filter function for module names
+                }, function(modules){
+                    for(var j=0;j<modules.length;j++){
+                        if(modules[j].id.indexOf(node.type) >= 0){ //if the type of the node being loaded is equal to the plugin name then use the plugin
+                            modules[j].module.deploy(node); //All plugin should export deploy
+                            found=true; //A plugin has been found -> don't use nodered
                         }
-                    } else {
-                        if (!subflowInstanceNodes[id]) {
-                            try {
-                                var nodes = createSubflow(flow.subflows[node.subflow] || global.subflows[node.subflow], node, flow.subflows, global.subflows, activeNodes);
-                                subflowInstanceNodes[id] = nodes.map(function (n) {
-                                    return n.id
-                                });
-                                for (var i = 0; i < nodes.length; i++) {
-                                    if (nodes[i]) {
-                                        activeNodes[nodes[i].id] = nodes[i];
-                                    }
+                    }
+                    if(!found) {
+                        if (!node.subflow) {
+                            if (!activeNodes[id]) {
+                                newNode = createNode(node.type, node);
+                                if (newNode) {
+                                    activeNodes[id] = newNode;
                                 }
-                            } catch (err) {
-                                console.log(err.stack)
+                            }
+                        } else {
+                            if (!subflowInstanceNodes[id]) {
+                                try {
+                                    var nodes = createSubflow(flow.subflows[node.subflow] || global.subflows[node.subflow], node, flow.subflows, global.subflows, activeNodes);
+                                    subflowInstanceNodes[id] = nodes.map(function (n) {
+                                        return n.id
+                                    });
+                                    for (var i = 0; i < nodes.length; i++) {
+                                        if (nodes[i]) {
+                                            activeNodes[nodes[i].id] = nodes[i];
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.log(err.stack)
+                                }
                             }
                         }
                     }
-                }
+                }, node);
             }
         }
 
@@ -472,139 +484,36 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
     return nodes;
 }
 
-var Docker = require('dockerode');
-function buildAndDeploy(node){
-    //Create docker client
-    var docker = new Docker({host: node.endpoint, port: 3000});
 
-    //Create a container from an image
-    docker.createContainer({
-        Image: node.image,
-        AttachStdin: false,
-        AttachStdout: true,
-        AttachStderr: true,
-        Tty: true,
-        Cmd: ['/bin/bash', '-c', node.command],
-        OpenStdin: false,
-        StdinOnce: false
-    }).then(function(container) {
-        return container.start();
-    }).catch(function(err) {
-        console.log(err);
-    });
+//This is used to load javascript files dynamically :)
+var path = require('path'),
+    walk = require('walk');
 
-    docker.run('ubuntu', ['bash', '-c', 'uname -a'], process.stdout, function (err, data, container) {
-        console.log(data.StatusCode);
-    });
+function findModules(opts,done, ctx){
+    var walker  = walk.walk(opts.folder, { followLinks: false }),
+        modules = [];
 
-    docker.buildImage({
-        context: '',
-        src: ['Dockerfile', node.build]
-    }, {t: node.image}, function (err, response) {
-        console.log(err);
-    });
+    walker.on('file', function(root, stat, next) {
+        var relative = path.join(root, stat.name),
+            current=path.join(path.dirname(require.main.filename), relative);
+            extname = path.extname(current);
 
-}
-
-//This function call ThingML for compilation
-//It generates Arduino sketches
-//output streams are redirected
-var spawn = require('child_process').spawn;
-var fs = require('fs');
-function compileThingML(node){
-    var output='generated';
-    if (!fs.existsSync(output)){
-        console.log('Creating ' + output + ' folder...');
-        fs.mkdirSync(output);
-    }
-
-    fs.writeFile(node.name+'.thingml', node.code, function(err) {
-        if(err) {
-            return console.log(err);
+        if(extname === '.js' && (opts.filter === undefined || opts.filter(current))){
+            var module = require(current);
+            var tmp= {};
+            tmp.id=stat.name;
+            tmp.module=module;
+            modules.push(tmp);
         }
-        console.log("The file was saved!");
+
+        next();
     });
 
-    var java = spawn('java', [
-        '-jar', './lib/thingml/ThingML2CLI.jar',
-        '-c', node.target,
-        '-s', node.name+'.thingml',
-        '-o', output
-    ]);
-
-
-    java.stdout.setEncoding('utf8');
-    java.stdout.on('data', (data) => {
-        data.trim().split('\n').forEach(line => {
-        if (line.startsWith('[WARNING]')) {
-        console.log('[WARNING]'+line);
-    } else if (line.startsWith('[ERROR]')) {//ideally, that should arrive on stderr
-        hasError = true;
-        console.log('[ERROR]'+line);
-    } else {
-        console.log('[INFO]'+line);
-    }
+    walker.on('end', function() {
+        done(modules, ctx);
     });
-    });
-
-    var hasError=false;
-
-    java.on('error', (err) => {
-        hasError = true;
-        console.log('Something went wrong with the compiler!');
-    });
-
-    java.on('exit', (code) => {
-        if (hasError) {
-            console.log('Cannot complete because of errors!');
-        } else {
-            console.log('Done!');
-            if(node.target.indexOf("arduino") >=0){
-                compileAndUpload(node);
-            }
-        }
-    });
-
 }
 
-//This function calls Arduino ID to compile Arduino sketches
-// and to deploy them
-function compileAndUpload(node){
-    var board='arduino:avr:'+node.ardtype;
-    if(node.cpu.indexOf("") < 0){
-        board+=+':cpu='+node.cpu;
-    }
-
-    var arduino = spawn('/Applications/Arduino.app/Contents/MacOS/Arduino', [
-        '--board', board,
-        '--port', node.port,
-        '--upload', 'generated/'+node.name+'/'+node.name+'thingml',
-    ]);
-
-    arduino.stdout.setEncoding('utf8');
-    arduino.stdout.on('data', (data) => {
-        data.trim().split('\n').forEach(line => {
-        console.log('[WARNING]'+line);
-    });
-    });
-
-
-    arduino.stderr.setEncoding('utf8');
-    arduino.stderr.on('data', (data) => {
-        data.trim().split('\n').forEach(line => {
-        console.log('[ERROR]'+line);
-    });
-    });
-
-    arduino.on('error', (err) => {
-        console.log('Something went wrong with the compiler!');
-    });
-
-    arduino.on('exit', (code) => {
-            console.log('Done!');
-    });
-
-}
 
 module.exports = {
     create: function(global,conf) {

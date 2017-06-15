@@ -63,7 +63,8 @@
         "node-red-node-email":"0.1.*",
         "node-red-node-twitter":"0.1.*",
         "node-red-node-rbe":"0.1.*",
-        "dockerode":"2.4.3"
+        "dockerode":"2.4.3",
+        "walk":"2.3.9"
     },
     "optionalDependencies": {
         "bcrypt":"~1.0.1"
