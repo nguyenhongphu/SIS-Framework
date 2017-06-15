@@ -205,6 +205,11 @@
         menuOptions.push(null);
         menuOptions.push({id:"menu-item-search",label:RED._("menu.label.search"),onselect:"core:search"});
         menuOptions.push(null);
+        menuOptions.push({id:"menu-item-host",label:RED._("menu.label.host"),options:[
+            {id:"menu-item-docker",label:RED._("menu.label.docker"),onselect:"core:create-docker-host"},
+            {id:"menu-item-VM",label:RED._("menu.label.VM"),onselect:"core:create-VM-host"},
+            {id:"menu-item-machine",label:RED._("menu.label.machine"),onselect:"core:create-machine-host"}
+        ]});
         menuOptions.push({id:"menu-item-config-nodes",label:RED._("menu.label.displayConfig"),onselect:"core:show-config-tab"});
         menuOptions.push({id:"menu-item-workspace",label:RED._("menu.label.flows"),options:[
             {id:"menu-item-workspace-add",label:RED._("menu.label.add"),onselect:"core:add-flow"},
@@ -243,6 +248,7 @@
         RED.editor.init();
         RED.keyboard.init();
         RED.diff.init();
+        RED.host.init();
 
         RED.menu.init({id:"btn-sidemenu",options: menuOptions});
 

@@ -25,6 +25,8 @@ RED.nodes = (function() {
     var subflows = {};
     var loadedFlowVersion = null;
 
+    var deviceboxes = [];
+
     var initialLoad;
 
     var dirty = false;
@@ -32,6 +34,18 @@ RED.nodes = (function() {
     function setDirty(d) {
         dirty = d;
         RED.events.emit("nodes:change",{dirty:dirty});
+    }
+
+    function addDeviceBox(devicebox) {
+        deviceboxes.push(devicebox);
+        //addNode(devicebox);
+    }
+
+    function removeDeviceBox(db) {
+        var index = deviceboxes.indexOf(db);
+        if (index != -1) {
+            deviceboxes.splice(index,1);
+        }
     }
 
     var registry = (function() {
@@ -580,6 +594,9 @@ RED.nodes = (function() {
             var node = nodes[i];
             nns.push(convertNode(node, exportCredentials));
         }
+        for (i=0;i<deviceboxes.length;i++) {
+            nns.push(deviceboxes[i]);
+        }
         return nns;
     }
 
@@ -873,11 +890,19 @@ RED.nodes = (function() {
             }
         }
 
+        // Add device boxes to the view
+        for (i=0;i<newNodes.length;i++) {
+            n = newNodes[i];
+            if (n.type === "devicebox") {
+                addDeviceBox(n);
+            }
+        }
+
         // Find regular flow nodes and subflow instances
         for (i=0;i<newNodes.length;i++) {
             n = newNodes[i];
             // TODO: remove workspace in next release+1
-            if (n.type !== "workspace" && n.type !== "tab" && n.type !== "subflow") {
+            if (n.type !== "workspace" && n.type !== "tab" && n.type !== "subflow" && n.type !== "devicebox") {
                 def = registry.getNodeType(n.type);
                 if (!def || def.category != "config") {
                     var node = {x:n.x,y:n.y,z:n.z,type:0,wires:n.wires,changed:false,_config:{}};
@@ -1207,6 +1232,9 @@ RED.nodes = (function() {
         getWorkspaceOrder: function() { return workspacesOrder },
         setWorkspaceOrder: function(order) { workspacesOrder = order; },
         workspace: getWorkspace,
+        addDeviceBox: addDeviceBox,
+        removeDeviceBox: removeDeviceBox,
+        deviceboxes: deviceboxes,
 
         addSubflow: addSubflow,
         removeSubflow: removeSubflow,
