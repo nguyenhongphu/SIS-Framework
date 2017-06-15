@@ -1,12 +1,12 @@
 {
-    "name"         : "node-red",
-    "version"      : "0.16.2",
-    "description"  : "A visual tool for wiring the Internet of Things",
-    "homepage"     : "http://nodered.org",
+    "name"         : "SIS-Framework",
+    "version"      : "0.0.1",
+    "description"  : "Extension of Node-red with support for ThingML, Docker, distribution etc.",
+    "homepage"     : "",
     "license"      : "Apache-2.0",
     "repository"   : {
         "type":"git",
-        "url":"https://github.com/node-red/node-red.git"
+        "url":"https://github.com/SINTEF-9012/SIS-Framework.git"
     },
     "main"         : "red/red.js",
     "scripts"      : {
@@ -62,7 +62,8 @@
         "node-red-node-feedparser":"0.1.*",
         "node-red-node-email":"0.1.*",
         "node-red-node-twitter":"0.1.*",
-        "node-red-node-rbe":"0.1.*"
+        "node-red-node-rbe":"0.1.*",
+        "dockerode":"2.4.3"
     },
     "optionalDependencies": {
         "bcrypt":"~1.0.1"
