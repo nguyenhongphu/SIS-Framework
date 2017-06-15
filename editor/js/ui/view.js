@@ -42,6 +42,7 @@ RED.view = (function() {
     var activeNodes = [];
     var activeLinks = [];
     var activeFlowLinks = [];
+    var activeWorkspace = 0;
 
     var selected_link = null,
         mousedown_link = null,
@@ -58,7 +59,10 @@ RED.view = (function() {
         lastClickNode = null,
         dblClickPrimed = null,
         clickTime = 0,
-        clickElapsed = 0;
+        clickElapsed = 0,
+        dblClickDevBox=null,
+        lastClickDevBox = null,
+        mousedown_devBox=null;
 
     var clipboard = "";
 
@@ -201,6 +205,9 @@ RED.view = (function() {
         .attr("width", space_width)
         .attr("height", space_height)
         .attr("fill","#fff");
+
+    var devicebox = vis.append('svg:g');
+    var selected_devBox = null;
 
     var gridScale = d3.scale.linear().range([0,space_width]).domain([0,space_width]);
     var grid = vis.append("g");
@@ -514,6 +521,13 @@ RED.view = (function() {
                 lasso = null;
             }
         }
+
+        // clear devBox selection if any
+        if (selected_devBox != null) {
+            selected_devBox.selected = false;
+            selected_devBox = null;
+        }
+
         if (mouse_mode === 0 || mouse_mode === RED.state.QUICK_JOINING) {
             if (d3.event.metaKey || d3.event.ctrlKey) {
                 point = d3.mouse(this);
@@ -598,19 +612,23 @@ RED.view = (function() {
                 redraw();
             }
         }
-        if (mouse_mode === 0 && !(d3.event.metaKey || d3.event.ctrlKey)) {
+        if ((mouse_mode === 0 || mouse_mode === RED.state.HOST_DRAWING) && !(d3.event.metaKey || d3.event.ctrlKey)) {
             if (!touchStartTime) {
                 point = d3.mouse(this);
-                lasso = vis.append("rect")
-                .attr("ox",point[0])
+                if (mouse_mode === RED.state.HOST_DRAWING) {
+                    console.log('add lasso at the dev box layer');
+                    lasso = devicebox.append('rect').attr("class","device-lasso");
+                }else{
+                    lasso = vis.append("rect").attr("class","lasso");
+                }
+                lasso.attr("ox",point[0])
                 .attr("oy",point[1])
                 .attr("rx",1)
                 .attr("ry",1)
                 .attr("x",point[0])
                 .attr("y",point[1])
                 .attr("width",0)
-                .attr("height",0)
-                .attr("class","lasso");
+                .attr("height",0);
                 d3.event.preventDefault();
             }
         }
@@ -879,6 +897,7 @@ RED.view = (function() {
     }
 
     function canvasMouseUp() {
+        console.log("we are in cavase mouse up");
         var i;
         var historyEvent;
         if (mouse_mode === RED.state.QUICK_JOINING) {
@@ -933,7 +952,13 @@ RED.view = (function() {
                 });
             }
             updateSelection();
-            lasso.remove();
+            //lasso.remove();
+            if (mouse_mode == RED.state.HOST_DRAWING) {
+                console.log("mouse up, we set the devicebox");
+                setDeviceBox(lasso);
+            } else {
+                lasso.remove();
+            }
             lasso = null;
         } else if (mouse_mode == RED.state.DEFAULT && mousedown_link == null && !d3.event.ctrlKey&& !d3.event.metaKey ) {
             clearSelection();
@@ -985,6 +1010,70 @@ RED.view = (function() {
         }
         resetMouseVars();
         redraw();
+    }
+
+    function setDeviceBox(lasso) {
+        console.log("we are into setdevicebox");
+        // only keep boxes that surround nodes
+        if (moving_set.length == 0) {
+            lasso.remove();
+            lasso = null;
+            return;
+        }
+
+        // add a 'device_box' node to the model.
+        var nn = { id:(1+Math.random()*4294967295).toString(16),
+            type:"devicebox",
+            deviceId: "temp",
+            x:Number(lasso.attr("x")),
+            y:Number(lasso.attr("y")),
+            w:Number(lasso.attr("width")),
+            h:Number(lasso.attr("height")),
+            z:activeWorkspace
+        };
+
+        // add it to the device box list in the model.
+        RED.nodes.addDeviceBox(nn);
+
+        console.log("node has just been added to the model");
+
+        // TODO: for each node in the moving set, set the device_id to the same as the box
+        for (var i=0;i<moving_set.length;i++) {
+            var n = moving_set[i];
+            //n.n.deviceId = currentDevice.deviceId;
+        }
+
+        // device box added, save it
+        lasso.remove();
+        lasso = null;
+        redraw();
+    }
+
+    /**
+     * select the device box
+     */
+    function devBoxMouseDown(d) {
+        console.log("we are in devmouse down")
+        // clear devBox selection
+        if (selected_devBox != null) {
+            selected_devBox.selected = false;
+        }
+        selected_devBox = null;
+
+        selected_devBox = d;
+
+        var now = Date.now();
+        clickElapsed = now-clickTime;
+        clickTime = now;
+
+        dblClickDevBox = (lastClickDevBox == selected_devBox);
+        lastClickDevBox = selected_devBox;
+
+        d.dirty = true;
+        d.selected = true;
+        updateSelection();
+        redraw();
+        d3.event.preventDefault();
     }
 
     function zoomIn() {
@@ -1176,6 +1265,7 @@ RED.view = (function() {
         }
     }
     function editSelection() {
+        console.log("We are in edit selection");
         if (moving_set.length > 0) {
             var node = moving_set[0].n;
             if (node.type === "subflow") {
@@ -1185,6 +1275,7 @@ RED.view = (function() {
             }
         }
     }
+
     function deleteSelection() {
         if (moving_set.length > 0 || selected_link != null) {
             var result;
@@ -1446,7 +1537,20 @@ RED.view = (function() {
         }
     }
 
+    function devBoxMouseUp(d){
+        console.log("we are in devBoxMouseUp"+JSON.stringify(d)+ " " +dblClickDevBox+ " :: "+ lastClickDevBox +" :: "+ clickElapsed);
+        focusView();
+        if (dblClickDevBox && lastClickDevBox == d && clickElapsed > 0 && clickElapsed < 750) {
+            console.log("Double click");
+            mouse_mode = RED.state.DEFAULT;
+            RED.editor.edit(d);
+            clickElapsed = 0;
+            d3.event.stopPropagation();
+        }
+    }
+
     function nodeMouseUp(d) {
+        console.log("Open editor?"+JSON.stringify(d));
         if (dblClickPrimed && mousedown_node == d && clickElapsed > 0 && clickElapsed < 750) {
             mouse_mode = RED.state.DEFAULT;
             if (d.type != "subflow") {
@@ -1463,6 +1567,7 @@ RED.view = (function() {
     }
 
     function nodeMouseDown(d) {
+        console.log("mouse down on node");
         focusView();
         //var touch0 = d3.event;
         //var pos = [touch0.pageX,touch0.pageY];
@@ -1561,6 +1666,7 @@ RED.view = (function() {
     }
 
     function nodeButtonClicked(d) {
+        console.log("node button clicked");
         if (!activeSubflow && !d.changed) {
             if (d._def.button.toggle) {
                 d[d._def.button.toggle] = !d[d._def.button.toggle];
@@ -1599,11 +1705,49 @@ RED.view = (function() {
         resetMouseVars();
     }
     function redraw() {
+        console.log("we are in redraw");
         vis.attr("transform","scale("+scaleFactor+")");
         outer.attr("width", space_width*scaleFactor).attr("height", space_height*scaleFactor);
 
         // Don't bother redrawing nodes if we're drawing links
         if (mouse_mode != RED.state.JOINING) {
+
+            var devbox = devicebox.selectAll(".devboxgroup").data(RED.nodes.deviceboxes.filter(function(d) {
+                return d.z == activeWorkspace
+            }),function(d){
+                return d.id
+            });
+            devbox.exit().remove();
+
+            // add new ones
+            var devboxEnter = devbox.enter().insert("svg:g").attr("class", "devboxgroup");
+            devboxEnter.each(function(d,i) {
+                var db = d3.select(this);
+                db.attr("id", d.id);
+                db.attr("transform", "translate("+d.x+","+d.y+")");
+
+                var dbr = db.append('rect')
+                    .attr("width",d.w)
+                    .attr("height",d.h)
+                    .attr("class","device-lasso");
+
+                var dbt = db.append('text').attr("x",5).attr("y",15).text(d.deviceId);
+                var dbresize = db.append('rect')
+                    .attr("class","dev-box-handle")
+                    .attr("x", d.w-20)
+                    .attr("y", d.h-20)
+                    .attr("width",20)
+                    .attr("height",20);
+            });
+
+            // connect mouse down to the boxes to select them
+            devbox.on("mousedown",devBoxMouseDown);
+            devbox.on("mouseup",devBoxMouseUp);
+
+            // highlight selected devbox
+            devbox.classed("devbox_selected", function(d) {
+                return d === selected_devBox || d.selected;
+            });
 
             var dirtyNodes = {};
 

@@ -240,7 +240,7 @@ RED.search = (function() {
         RED.view.reveal(node.id);
     }
 
-    function show() {
+    function    show() {
         if (disabled) {
             return;
         }
