@@ -1,8 +1,19 @@
 var Docker = require('dockerode');
-function buildAndDeploy(node){
-    //Create docker client
-    var docker = new Docker({host: node.endpoint, port: 3000});
+//Create docker client
+var docker;
 
+function buildAndDeploy(node){
+    docker = new Docker({host: node.endpoint, port: 1234});
+    docker.pull(node.image, function (err, stream) {
+        stream.pipe(process.stdout, {end: true});
+        stream.on('end', function() {
+            createContainerAndStart(node);
+        });
+    });
+}
+
+function createContainerAndStart(node){
+    console.log("About to create the container");
     //Create a container from an image
     docker.createContainer({
         Image: node.image,
@@ -14,22 +25,11 @@ function buildAndDeploy(node){
         OpenStdin: false,
         StdinOnce: false
     }).then(function(container) {
+        console.log("And now we start it!");
         return container.start();
     }).catch(function(err) {
         console.log(err);
     });
-
-    docker.run('ubuntu', ['bash', '-c', 'uname -a'], process.stdout, function (err, data, container) {
-        console.log(data.StatusCode);
-    });
-
-    docker.buildImage({
-        context: '',
-        src: ['Dockerfile', node.build]
-    }, {t: node.image}, function (err, response) {
-        console.log(err);
-    });
-
 }
 
 //This is mandatory for executing the plugin
