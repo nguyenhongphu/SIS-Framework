@@ -5,15 +5,18 @@ var docker;
 function buildAndDeploy(node){
     docker = new Docker({host: node.endpoint, port: 1234});
     docker.pull(node.image, function (err, stream) {
-        stream.pipe(process.stdout, {end: true});
-        stream.on('end', function() {
+        if (stream !== null) {
+            stream.pipe(process.stdout, {end: true});
+            stream.on('end', function () {
+                createContainerAndStart(node);
+            });
+        }else{
             createContainerAndStart(node);
-        });
+        }
     });
 }
 
 function createContainerAndStart(node){
-    console.log("About to create the container");
     //Create a container from an image
     docker.createContainer({
         Image: node.image,
@@ -25,7 +28,6 @@ function createContainerAndStart(node){
         OpenStdin: false,
         StdinOnce: false
     }).then(function(container) {
-        console.log("And now we start it!");
         return container.start();
     }).catch(function(err) {
         console.log(err);
