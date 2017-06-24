@@ -88,21 +88,15 @@ function Flow(global,flow) {
         }, function (modules) {
             for (id in flow.nodes) {
                 var found = false;
-                console.log("llllllllllllllllll" + id);
                 if (flow.nodes.hasOwnProperty(id)) {
                     node = flow.nodes[id];
-                    console.log("=============================");
                     for (var j = 0; j < modules.length; j++) {
-                        console.log("+++++++++++++++++++++++++++++++++++" + node.type);
-                        console.log("+++++++++++++++++++++++++++++++++++" + modules[j].id);
                         if (modules[j].id.indexOf(node.type) >= 0) { //if the type of the node being loaded is equal to the plugin name then use the plugin
-                            console.log("--------------------------------");
                             modules[j].module.deploy(node); //All plugin should export deploy
                             found = true; //A plugin has been found -> don't use nodered
                             break;
                         }
                     }
-                    console.log(">>>>>>>>>>>>>>>>>>>>>>>>"+found);
                     if (!found) {
 
                         if (!node.subflow) {
