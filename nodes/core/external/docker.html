@@ -39,6 +39,10 @@
             <input type="text" id="node-input-image" placeholder="Image">
         </div>
         <div class="form-row">
+            <label for="node-input-exposedport"><i class="fa fa-picture-o"></i> Exposed port</label>
+            <input type="text" id="node-input-exposedport" placeholder="Exposed port">
+        </div>
+        <div class="form-row">
             <label for="node-input-command"><i class="fa fa-tag"></i> Start Command</label>
             <input type="text" id="node-input-command" placeholder="start command">
         </div>
@@ -66,7 +70,8 @@
             endpoint: {value:""},
             command: {value: ""},
             image: {value: ""},
-            build: {value: ""}
+            build: {value: ""},
+            exposedport: {value: ""}
         },
         inputs: 1,
         outputs: 1,
