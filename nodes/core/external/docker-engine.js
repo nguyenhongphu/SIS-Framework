@@ -3,7 +3,7 @@ var Docker = require('dockerode');
 var docker;
 
 function buildAndDeploy(node){
-    docker = new Docker({host: node.endpoint, port: 1234});
+    docker = new Docker({host: node.endpoint, port: 2376});
     docker.pull(node.image, function (err, stream) {
         if (stream !== null) {
             stream.pipe(process.stdout, {end: true});
@@ -16,9 +16,12 @@ function buildAndDeploy(node){
     });
 }
 
+
 function createContainerAndStart(node){
     //Create a container from an image
-    docker.createContainer({
+    var port='{ "'+node.exposedport+'/tcp" : [{ "HostIP":"0.0.0.0", "HostPort": "'+node.exposedport+'" }]}';
+
+    var options={
         Image: node.image,
         AttachStdin: false,
         AttachStdout: true,
@@ -26,12 +29,22 @@ function createContainerAndStart(node){
         Tty: true,
         Cmd: ['/bin/bash', '-c', node.command],
         OpenStdin: false,
-        StdinOnce: false
-    }).then(function(container) {
+        StdinOnce: false,
+        ExposedPorts: {
+            "8000/tcp": {},
+        }
+    };
+    console.log(port);
+    options.HostConfig={};
+    options.HostConfig.PortBindings=JSON.parse(port);
+
+    docker.createContainer(options).then(function(container) {
         return container.start();
     }).catch(function(err) {
         console.log(err);
     });
+
+
 }
 
 //This is mandatory for executing the plugin
