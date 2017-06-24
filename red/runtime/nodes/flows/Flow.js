@@ -80,15 +80,14 @@ function Flow(global,flow) {
         }
 
 
-        var found = false;
         findModules({//Should not be in the for ... next step
             folder: './nodes/core/external',
             filter: function (str) {
                 if (str.indexOf("-engine") >= 0) return true; //only load the files with "-engine" in the name
             }, // either undefined or a filter function for module names
         }, function (modules) {
-
             for (id in flow.nodes) {
+                var found = false;
                 console.log("llllllllllllllllll" + id);
                 if (flow.nodes.hasOwnProperty(id)) {
                     node = flow.nodes[id];
@@ -100,12 +99,14 @@ function Flow(global,flow) {
                             console.log("--------------------------------");
                             modules[j].module.deploy(node); //All plugin should export deploy
                             found = true; //A plugin has been found -> don't use nodered
+                            break;
                         }
                     }
+                    console.log(">>>>>>>>>>>>>>>>>>>>>>>>"+found);
                     if (!found) {
+
                         if (!node.subflow) {
                             if (!activeNodes[id]) {
-                                console.log(">>>>>>>>>>>>>>>>>>>>>>>>");
                                 newNode = createNode(node.type, node);
                                 if (newNode) {
                                     activeNodes[id] = newNode;
