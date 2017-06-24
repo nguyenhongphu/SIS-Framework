@@ -328,6 +328,27 @@ function evaluateNodeProperty(value, type, node, msg) {
     return value;
 }
 
+var mosca = require('mosca')
+
+function startMosca() {
+    var settings = {
+        port: 1883,
+    };
+
+    var server = new mosca.Server(settings);
+    server.on('ready', setup);
+
+    server.on('clientConnected', function(client) {
+        console.log('client connected', client.id);
+    });
+
+    // fired when the mqtt server is ready
+    function setup() {
+        console.log('Mosca server is up and running')
+    }
+
+    return server;
+}
 
 module.exports = {
     ensureString: ensureString,
@@ -338,5 +359,6 @@ module.exports = {
     getMessageProperty: getMessageProperty,
     setMessageProperty: setMessageProperty,
     evaluateNodeProperty: evaluateNodeProperty,
-    normalisePropertyExpression: normalisePropertyExpression
+    normalisePropertyExpression: normalisePropertyExpression,
+    startMosca: startMosca
 };

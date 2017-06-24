@@ -43,6 +43,12 @@ var subflowInstanceNodeMap = {};
 
 var typeEventRegistered = false;
 
+var MQ=null;
+
+function getMQ(){
+    return MQ;
+}
+
 function init(runtime) {
     if (started) {
         throw new Error("Cannot init without a stop");
@@ -50,6 +56,7 @@ function init(runtime) {
     settings = runtime.settings;
     storage = runtime.storage;
     started = false;
+    MQ = redUtil.startMosca();
     if (!typeEventRegistered) {
         events.on('type-registered',function(type) {
             if (activeFlowConfig && activeFlowConfig.missingTypes.length > 0) {
@@ -643,6 +650,7 @@ module.exports = {
     updateFlow: updateFlow,
     removeFlow: removeFlow,
     disableFlow:null,
-    enableFlow:null
+    enableFlow:null,
+    getMQ:getMQ
 
 };

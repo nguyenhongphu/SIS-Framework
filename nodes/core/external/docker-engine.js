@@ -3,7 +3,7 @@ var Docker = require('dockerode');
 var docker;
 
 function buildAndDeploy(node){
-    docker = new Docker({host: node.endpoint, port: 2376});
+    docker = new Docker({host: node.endpoint, port: node.port});
     docker.pull(node.image, function (err, stream) {
         if (stream !== null) {
             stream.pipe(process.stdout, {end: true});

@@ -33,7 +33,10 @@
         <input type="text" id="node-input-endpoint" placeholder="endpoint">
         <input type="hidden" id="node-input-code" autofocus="autofocus">
     </div>
-
+    <div class="form-row">
+            <label for="node-input-port"><i class="fa fa-picture-o"></i> Port</label>
+            <input type="text" id="node-input-port" placeholder=" Port">
+        </div>
         <div class="form-row">
             <label for="node-input-image"><i class="fa fa-picture-o"></i> Image</label>
             <input type="text" id="node-input-image" placeholder="Image">
@@ -71,7 +74,8 @@
             command: {value: ""},
             image: {value: ""},
             build: {value: ""},
-            exposedport: {value: ""}
+            exposedport: {value: ""},
+            port: {value: ""}
         },
         inputs: 1,
         outputs: 1,

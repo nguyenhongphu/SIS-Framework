@@ -52,9 +52,9 @@ function Flow(global,flow) {
                             // References a non-existent config node
                             // Add it to the back of the list to try again later
                             configNodes.push(id);
-                            configNodeAttempts[id] = (configNodeAttempts[id]||0)+1;
+                            configNodeAttempts[id] = (configNodeAttempts[id] || 0) + 1;
                             if (configNodeAttempts[id] === 100) {
-                                throw new Error("Circular config node dependency detected: "+id);
+                                throw new Error("Circular config node dependency detected: " + id);
                             }
                             readyToCreate = false;
                             break;
@@ -62,7 +62,7 @@ function Flow(global,flow) {
                     }
                 }
                 if (readyToCreate) {
-                    newNode = createNode(node.type,node);
+                    newNode = createNode(node.type, node);
                     if (newNode) {
                         activeNodes[id] = newNode;
                     }
@@ -71,7 +71,7 @@ function Flow(global,flow) {
         }
 
         if (diff && diff.rewired) {
-            for (var j=0;j<diff.rewired.length;j++) {
+            for (var j = 0; j < diff.rewired.length; j++) {
                 var rewireNode = activeNodes[diff.rewired[j]];
                 if (rewireNode) {
                     rewireNode.updateWires(flow.nodes[rewireNode.id].wires);
@@ -80,26 +80,32 @@ function Flow(global,flow) {
         }
 
 
-        for (id in flow.nodes) {
-            if (flow.nodes.hasOwnProperty(id)) {
-                node = flow.nodes[id];
+        var found = false;
+        findModules({//Should not be in the for ... next step
+            folder: './nodes/core/external',
+            filter: function (str) {
+                if (str.indexOf("-engine") >= 0) return true; //only load the files with "-engine" in the name
+            }, // either undefined or a filter function for module names
+        }, function (modules) {
 
-                var found=false;
-                findModules({//Should not be in the for ... next step
-                    folder: './nodes/core/external',
-                    filter: function(str){
-                        if(str.indexOf("-engine") >= 0) return true; //only load the files with "-engine" in the name
-                    }, // either undefined or a filter function for module names
-                }, function(modules){
-                    for(var j=0;j<modules.length;j++){
-                        if(modules[j].id.indexOf(node.type) >= 0){ //if the type of the node being loaded is equal to the plugin name then use the plugin
+            for (id in flow.nodes) {
+                console.log("llllllllllllllllll" + id);
+                if (flow.nodes.hasOwnProperty(id)) {
+                    node = flow.nodes[id];
+                    console.log("=============================");
+                    for (var j = 0; j < modules.length; j++) {
+                        console.log("+++++++++++++++++++++++++++++++++++" + node.type);
+                        console.log("+++++++++++++++++++++++++++++++++++" + modules[j].id);
+                        if (modules[j].id.indexOf(node.type) >= 0) { //if the type of the node being loaded is equal to the plugin name then use the plugin
+                            console.log("--------------------------------");
                             modules[j].module.deploy(node); //All plugin should export deploy
-                            found=true; //A plugin has been found -> don't use nodered
+                            found = true; //A plugin has been found -> don't use nodered
                         }
                     }
-                    if(!found) {
+                    if (!found) {
                         if (!node.subflow) {
                             if (!activeNodes[id]) {
+                                console.log(">>>>>>>>>>>>>>>>>>>>>>>>");
                                 newNode = createNode(node.type, node);
                                 if (newNode) {
                                     activeNodes[id] = newNode;
@@ -123,22 +129,21 @@ function Flow(global,flow) {
                             }
                         }
                     }
-                }, node);
-            }
-        }
-
-        for (id in activeNodes) {
-            if (activeNodes.hasOwnProperty(id)) {
-                node = activeNodes[id];
-                if (node.type === "catch") {
-                    catchNodeMap[node.z] = catchNodeMap[node.z] || [];
-                    catchNodeMap[node.z].push(node);
-                } else if (node.type === "status") {
-                    statusNodeMap[node.z] = statusNodeMap[node.z] || [];
-                    statusNodeMap[node.z].push(node);
                 }
             }
-        }
+            for (id in activeNodes) {
+                if (activeNodes.hasOwnProperty(id)) {
+                    node = activeNodes[id];
+                    if (node.type === "catch") {
+                        catchNodeMap[node.z] = catchNodeMap[node.z] || [];
+                        catchNodeMap[node.z].push(node);
+                    } else if (node.type === "status") {
+                        statusNodeMap[node.z] = statusNodeMap[node.z] || [];
+                        statusNodeMap[node.z].push(node);
+                    }
+                }
+            }
+        }, node);
     }
 
     this.stop = function(stopList) {
