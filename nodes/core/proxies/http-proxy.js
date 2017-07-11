@@ -19,8 +19,8 @@ module.exports = function(RED) {
     var http = require('http');
     var sleep = require('sleep');
 
+    //Until we can connect
     function tryUntilSuccess(node, options, callback) {
-        console.log("tryuntilsuccess");
         var req = http.request(options, function(res) {
             var acc = "";
             res.on("data", function(msg) {
@@ -28,14 +28,14 @@ module.exports = function(RED) {
             });
             res.on("end", function() {
                 tryUntilSuccess(node, options, callback);
-                sleep.sleep(5); // sleep for ten seconds
+                sleep.sleep(5);
             });
         });
         req.end();
 
         req.on('error', function(e) {
             tryUntilSuccess(node, options, callback);
-            sleep.sleep(5); // sleep for ten seconds
+            sleep.sleep(5);
         });
     }
 
@@ -53,7 +53,7 @@ module.exports = function(RED) {
         });
 
         this.on("on",function() {
-            //Nothing yet?
+            //HTTP request :)
         });
 
         this.on("close",function() {
