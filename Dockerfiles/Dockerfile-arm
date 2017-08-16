@@ -1,0 +1,12 @@
+FROM arm32v7/ubuntu:16.04
+RUN apt-get update
+RUN apt-get install -y curl git nodejs npm
+RUN ln -s /usr/bin/nodejs /usr/bin/node
+
+RUN npm install npm@latest -g
+
+RUN git clone https://github.com/SINTEF-9012/SIS-Framework.git
+WORKDIR "/SIS-Framework"
+RUN npm install
+RUN npm run build
+ENTRYPOINT npm start

@@ -1,0 +1,10 @@
+image: nicolasferry/enact-framework:latest
+manifests:
+  - image: nicolasferry/sis-framework:latest
+    platform:
+      architecture: amd64
+      os: linux
+  - image: nicolasferry/sis-framework-arm:latest
+    platform:
+      architecture: arm
+      os: linux
