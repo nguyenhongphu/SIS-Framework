@@ -29,24 +29,11 @@ module.exports = function(RED) {
     function thingmlNode(n) {
         // Create a RED node
         RED.nodes.createNode(this,n);
+        this.port=n.port;
 
-        // Store local copies of the node configuration (as defined in the .html)
-        this.topic = n.topic;
 
         // copy "this" object in case we need it in context of callbacks of other functions.
         var node = this;
-
-        // Do whatever you need to do in here - declare callbacks etc
-        // Note: this sample doesn't do anything much - it will only send
-        // this message once at startup...
-        // Look at other real nodes for some better ideas of what to do....
-        /*var msg = {};
-        msg.topic = this.topic;
-        msg.payload = "Hello world !"*/
-
-        // send out the message to the rest of the workspace.
-        // ... this message will get sent at startup so you may not see it in a debug node.
-        /* this.send(msg); */
 
         var port = new SerialPort(node.port,  function (err) {
             if (err) {
@@ -56,10 +43,8 @@ module.exports = function(RED) {
 
         // respond to inputs....
         this.on('input', function (msg) {
-            //node.warn("I saw a payload: "+msg.payload);
-            // in this example just send it straight on... should process it here really
-            //node.send(msg);
-            port.write(msg,function(err){
+            console.log(msg.payload+" ======>");
+            port.write(msg.payload,function(err){
                 if (err) {
                     return console.log('Error on write: ', err.message);
                 }
@@ -67,9 +52,10 @@ module.exports = function(RED) {
             });
         });
 
-
         port.on('data', function (data) {
-            node.send(data);
+            var msg={};
+            msg.payload=data+"";
+            node.send(msg);
         });
 
         this.on("close", function() {

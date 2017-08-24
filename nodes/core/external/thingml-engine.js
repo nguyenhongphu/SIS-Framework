@@ -8,6 +8,8 @@ function compileThingML(node){
     var output='generated';
     var java;
 
+    var hasError=false;
+
     if(node.source === '') {
         if (!fs.existsSync(output)) {
             console.log('Creating ' + output + ' folder...');
@@ -51,7 +53,6 @@ function compileThingML(node){
 });
 });
 
-    var hasError=false;
 
     java.on('error', (err) => {
         hasError = true;
@@ -79,10 +80,11 @@ function compileAndUpload(node){
         board+=+':cpu='+node.cpu;
     }
 
+    //We Should install libaries first
     var arduino = spawn('/Applications/Arduino.app/Contents/MacOS/Arduino', [
         '--board', board,
         '--port', node.port,
-        '--upload', 'generated/'+node.name+'/'+node.name+'thingml',
+        '--upload', 'generated/'+node.name+'/'+node.name+'.ino',
     ]);
 
     arduino.stdout.setEncoding('utf8');

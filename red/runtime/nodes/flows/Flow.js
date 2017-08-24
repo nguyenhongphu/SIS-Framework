@@ -97,7 +97,6 @@ function Flow(global,flow) {
                             break;
                         }
                     }
-                    if (!found) {
 
                         if (!node.subflow) {
                             if (!activeNodes[id]) {
@@ -122,7 +121,6 @@ function Flow(global,flow) {
                                     console.log(err.stack)
                                 }
                             }
-                        }
                     }
                 }
             }
