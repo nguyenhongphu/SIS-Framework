@@ -53,6 +53,10 @@
             <input type="text" id="node-input-cpu" placeholder="cpu">
         </div>
         <div class="form-row">
+            <label for="node-input-libraries"><i class="fa fa-tag"></i> Libraries</label>
+            <input type="text" id="node-input-libraries" placeholder="libraries">
+        </div>
+        <div class="form-row">
             <label for="node-input-source"><i class="fa fa-file-o"></i> Source</label>
             <input type="text" id="node-input-source" placeholder="Path to source">
         </div>
@@ -83,7 +87,8 @@
             port: {value: ""},
             ardtype: {value: ""},
             source: {value: ""},
-            cpu: {value: ""}
+            cpu: {value: ""},
+            libraries:{value:""}
         },
         inputs: 1,
         outputs: 1,
