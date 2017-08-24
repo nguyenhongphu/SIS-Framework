@@ -52,8 +52,15 @@ module.exports = function(RED) {
             node.send(resp);
         });
 
-        this.on("on",function() {
+        this.on("input",function() {
             //HTTP request :)
+            var req = http.request(options, function(res) {
+                var acc = "";
+                res.on("data", function(msg) {
+                    node.send(msg);
+                });
+            });
+            req.end();
         });
 
         this.on("close",function() {

@@ -22,7 +22,8 @@
 module.exports = function(RED) {
     "use strict";
     // require any external libraries we may need....
-    //var foo = require("foo-library");
+    var SerialPort = require('serialport');
+
 
     // The main node definition - most things happen in here
     function thingmlNode(n) {
@@ -47,11 +48,28 @@ module.exports = function(RED) {
         // ... this message will get sent at startup so you may not see it in a debug node.
         /* this.send(msg); */
 
+        var port = new SerialPort(node.port,  function (err) {
+            if (err) {
+                return console.log('Error: ', err.message);
+            }
+        });
+
         // respond to inputs....
         this.on('input', function (msg) {
             //node.warn("I saw a payload: "+msg.payload);
             // in this example just send it straight on... should process it here really
             //node.send(msg);
+            port.write(msg,function(err){
+                if (err) {
+                    return console.log('Error on write: ', err.message);
+                }
+                console.log('message written');
+            });
+        });
+
+
+        port.on('data', function (data) {
+            node.send(data);
         });
 
         this.on("close", function() {
