@@ -14,15 +14,28 @@
  * limitations under the License.
  **/
 
-// If you use this as a template, update the copyright with your own name.
-
-// Sample Node-RED node file
-
 
 module.exports = function(RED) {
     "use strict";
-    // require any external libraries we may need....
     var SerialPort = require('serialport');
+    var sport;
+
+    function connect(node){
+        sport = new SerialPort(node.port, {
+            baudRate: 9600
+        }, function (err) {
+            if (err) {
+                console.log('Error serial: ', err.message);
+                node.status({fill:"red",shape:"dot",text:"error "});
+                setTimeout(function () {
+                    connect(node);
+                },5000)
+            }else{
+                console.log('Connected to '+node.port);
+                node.status({fill:"green",shape:"dot",text:"connected "});
+            }
+        });
+    }
 
 
     // The main node definition - most things happen in here
@@ -31,20 +44,15 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         this.port=n.port;
 
-
         // copy "this" object in case we need it in context of callbacks of other functions.
         var node = this;
 
-        var port = new SerialPort(node.port,  function (err) {
-            if (err) {
-                return console.log('Error: ', err.message);
-            }
-        });
+        connect(node);
 
         // respond to inputs....
         this.on('input', function (msg) {
-            console.log(msg.payload+" ======>");
-            port.write(msg.payload,function(err){
+            var m=Buffer.from(msg.payload+"");
+            sport.write(m,function(err){
                 if (err) {
                     return console.log('Error on write: ', err.message);
                 }
@@ -52,7 +60,7 @@ module.exports = function(RED) {
             });
         });
 
-        port.on('data', function (data) {
+        sport.on('data', function (data) {
             var msg={};
             msg.payload=data+"";
             node.send(msg);

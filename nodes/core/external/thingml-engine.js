@@ -80,14 +80,14 @@ function compileAndUpload(node){
         board+=+':cpu='+node.cpu;
     }
 
-    if(node.libraries !== "") {
+    /*if(node.libraries !== "") {
         var tab = node.libraries.split(',');
         for(var i in tab) {
             var arduinoLibraries = spawn('/Applications/Arduino.app/Contents/MacOS/Arduino', [
                 '--install-library', tab[i]
             ]);
         }
-    }
+    }*/
 
     //We Should install libaries first
     var arduino = spawn('/Applications/Arduino.app/Contents/MacOS/Arduino', [
