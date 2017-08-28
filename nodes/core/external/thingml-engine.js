@@ -99,7 +99,7 @@ function compileAndUpload(node){
     arduino.stdout.setEncoding('utf8');
     arduino.stdout.on('data', (data) => {
         data.trim().split('\n').forEach(line => {
-        console.log('[WARNING]'+line);
+        console.log('[INFO]'+line);
 });
 });
 
@@ -107,16 +107,17 @@ function compileAndUpload(node){
     arduino.stderr.setEncoding('utf8');
     arduino.stderr.on('data', (data) => {
         data.trim().split('\n').forEach(line => {
-        console.log('[ERROR]'+line);
+        console.log('[WARNING]'+line);
 });
 });
 
     arduino.on('error', (err) => {
-        console.log('Something went wrong with the compiler!');
+        console.log('Something went wrong with the compiler!'+err);
 });
 
     arduino.on('exit', (code) => {
         console.log('Done!');
+        //TODO: add feedback process done
 });
 
 }

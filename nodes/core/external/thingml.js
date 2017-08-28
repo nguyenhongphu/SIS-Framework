@@ -26,7 +26,7 @@ module.exports = function(RED) {
                 console.log('Error serial: ', err.message);
                 node.status({fill:"red",shape:"dot",text:"error "});
                 setTimeout(function () {
-                    connect(node);
+                    connect(node); //until it connects
                 },5000)
             }else{
                 console.log('Connected to '+node.port);
