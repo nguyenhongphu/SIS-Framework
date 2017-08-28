@@ -87,19 +87,16 @@ function Flow(global,flow) {
             }, // either undefined or a filter function for module names
         }, function (modules) {
             for (id in flow.nodes) {
-                var found = false;
                 if (flow.nodes.hasOwnProperty(id)) {
                     node = flow.nodes[id];
-                    for (var j = 0; j < modules.length; j++) {
-                        if (modules[j].id.indexOf(node.type) >= 0) { //if the type of the node being loaded is equal to the plugin name then use the plugin
-                            modules[j].module.deploy(node); //All plugin should export deploy
-                            found = true; //A plugin has been found -> don't use nodered
-                            break;
-                        }
-                    }
-
                         if (!node.subflow) {
                             if (!activeNodes[id]) {
+                                for (var j = 0; j < modules.length; j++) {
+                                    if (modules[j].id.indexOf(node.type) >= 0) { //if the type of the node being loaded is equal to the plugin name then use the plugin
+                                        modules[j].module.deploy(node); //All plugin should export deploy
+                                        break;
+                                    }
+                                }
                                 newNode = createNode(node.type, node);
                                 if (newNode) {
                                     activeNodes[id] = newNode;
