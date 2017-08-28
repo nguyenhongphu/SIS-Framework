@@ -21,9 +21,7 @@ module.exports = function(RED) {
     var sport;
 
     function connect(node){
-        sport = new SerialPort(node.port, {
-            baudRate: 9600
-        }, function (err) {
+        sport = new SerialPort(node.port, function (err) {
             if (err) {
                 console.log('Error serial: ', err.message);
                 node.status({fill:"red",shape:"dot",text:"error "});
