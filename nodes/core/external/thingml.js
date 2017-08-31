@@ -65,9 +65,12 @@ module.exports = function(RED) {
         });
 
         this.on("close", function() {
-            // Called when the node is shutdown - eg on redeploy.
-            // Allows ports to be closed, connections dropped etc.
-            // eg: node.client.disconnect();
+            sport.close(function (err) {
+                if (err) {
+                    return console.log('Error on close: ', err.message);
+                }
+                console.log('Port closed');
+            });
         });
     }
 
