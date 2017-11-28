@@ -3,7 +3,7 @@
 //output streams are redirected
 var spawn = require('child_process').spawn;
 var fs = require('fs');
-const os = require('os');
+var os = require('os');
 
 
 function compileThingML(node) {
@@ -102,7 +102,7 @@ function compileAndUpload(node) {
 
 
     if (node.libraries !== undefined && node.libraries !== "") {
-        let tab = JSON.parse(node.libraries);
+        var tab = JSON.parse(node.libraries);
         for (var k = 0; k < tab.length; k++) {
             var install = spawn(path_to_ardui, [
         '--install-library ', board
