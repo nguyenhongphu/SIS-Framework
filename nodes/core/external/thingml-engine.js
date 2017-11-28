@@ -92,7 +92,6 @@ function compileAndUpload(node) {
     }*/
 
 
-
     //We Should install libaries first
     var path_to_ardui = "";
     if (os.platform === "darwin") {
@@ -100,6 +99,18 @@ function compileAndUpload(node) {
     } else {
         path_to_ardui = 'arduino';
     }
+
+
+    if (node.libraries !== undefined && node.libraries !== "") {
+        let tab = JSON.parse(node.libraries);
+        for (var k = 0; k < tab.length; k++) {
+            var install = spawn(path_to_ardui, [
+        '--install-library ', board
+    ]);
+        }
+    }
+
+
     var arduino = spawn(path_to_ardui, [
         '--board ', board,
         '--port', node.port,
