@@ -77,10 +77,6 @@ function compileThingML(node) {
 //This function calls Arduino ID to compile Arduino sketches
 // and to deploy them
 function compileAndUpload(node) {
-    var board = 'arduino:avr:' + node.ardtype;
-    if (node.cpu.indexOf("") < 0) {
-        board += +':cpu=' + node.cpu;
-    }
 
     /*if(node.libraries !== "") {
         var tab = node.libraries.split(',');
@@ -100,20 +96,52 @@ function compileAndUpload(node) {
         path_to_ardui = 'arduino';
     }
 
+    var tab = JSON.parse(node.libraries);
+    installLibraries(node, path_to_ardui, tab, 0);
 
+}
+
+function installLibraries(node, path_to_ardui, tab, k) {
     if (node.libraries !== undefined && node.libraries !== "") {
-        var tab = JSON.parse(node.libraries);
-        for (var k = 0; k < tab.length; k++) {
+        console.log(JSON.stringify(tab));
+        if (k < tab.length) {
             console.log("installing library");
             var install = spawn(path_to_ardui, [
-        '--install-library ', tab[k]
-    ]);
+                '--install-library', tab[k]
+            ]);
+            install.stderr.setEncoding('utf8');
+            install.stderr.on('data', (data) => {
+                data.trim().split('\n').forEach(line => {
+                    console.log('[WARNING]' + line);
+                });
+            });
+
+            install.on('error', (err) => {
+                console.log('Something went wrong with the compiler!' + err);
+            });
+
+            install.on('exit', (code) => {
+                console.log('Done!');
+                installLibraries(node, path_to_ardui, tab, k + 1);
+            });
+        } else {
+            upload(node, path_to_ardui);
         }
+
+    } else {
+        upload(node, path_to_ardui);
     }
 
+}
 
+
+function upload(node, path_to_ardui) {
+    var board = 'arduino:avr:' + node.ardtype;
+    if (node.cpu.indexOf("") < 0) {
+        board += +':cpu=' + node.cpu;
+    }
     var arduino = spawn(path_to_ardui, [
-        '--board ', board,
+        '--board', board,
         '--port', node.port,
         '--upload', 'generated/' + node.name + '/' + node.name + '.ino',
     ]);
@@ -141,8 +169,8 @@ function compileAndUpload(node) {
         console.log('Done!');
         //TODO: add feedback process done
     });
-
 }
+
 
 exports.deploy = function (node) {
     compileThingML(node);
