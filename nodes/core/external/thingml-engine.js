@@ -3,6 +3,8 @@
 //output streams are redirected
 var spawn = require('child_process').spawn;
 var fs = require('fs');
+const os = require('os');
+
 
 function compileThingML(node) {
     var output = 'generated';
