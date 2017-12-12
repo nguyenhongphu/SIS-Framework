@@ -21,7 +21,7 @@ var Log = require("../../log");
 var redUtil = require("../../util");
 var flowUtil = require("./util");
 
-function Flow(global,flow) {
+function Flow(global, flow) {
     if (typeof flow === 'undefined') {
         flow = global;
     }
@@ -30,7 +30,7 @@ function Flow(global,flow) {
     var catchNodeMap = {};
     var statusNodeMap = {};
 
-    this.start = function(diff) {
+    this.start = function (diff) {
         var node;
         var newNode;
         var id;
@@ -80,44 +80,57 @@ function Flow(global,flow) {
         }
 
 
-        findModules({//Should not be in the for ... next step
+        findModules({ //Should not be in the for ... next step
             folder: './nodes/core/external',
             filter: function (str) {
                 if (str.indexOf("-engine") >= 0) return true; //only load the files with "-engine" in the name
             }, // either undefined or a filter function for module names
-        }, function (modules) {
+        }, function (modules, node, activeNodes) {
             for (id in flow.nodes) {
                 if (flow.nodes.hasOwnProperty(id)) {
                     node = flow.nodes[id];
-                        if (!node.subflow) {
-                            if (!activeNodes[id]) {
-                                for (var j = 0; j < modules.length; j++) {
+                    if (!node.subflow) {
+                        console.log(activeNodes[id]);
+                        if (!activeNodes[id]) {
+
+                            var j = 0;
+                            while (j <= modules.length) {
+                                if (j === modules.length) {
+                                    newNode = createNode(node.type, node);
+                                    if (newNode) {
+                                        activeNodes[id] = newNode;
+                                    }
+                                } else {
                                     if (modules[j].id.indexOf(node.type) >= 0) { //if the type of the node being loaded is equal to the plugin name then use the plugin
-                                        modules[j].module.deploy(node); //All plugin should export deploy
+                                        modules[j].module.deploy(node, function (node, id) {
+                                            newNode = createNode(node.type, node);
+                                            if (newNode) {
+                                                activeNodes[id] = newNode;
+                                            }
+                                        }, id);
                                         break;
                                     }
                                 }
-                                newNode = createNode(node.type, node);
-                                if (newNode) {
-                                    activeNodes[id] = newNode;
-                                }
+                                j++;
                             }
-                        } else {
-                            if (!subflowInstanceNodes[id]) {
-                                try {
-                                    var nodes = createSubflow(flow.subflows[node.subflow] || global.subflows[node.subflow], node, flow.subflows, global.subflows, activeNodes);
-                                    subflowInstanceNodes[id] = nodes.map(function (n) {
-                                        return n.id
-                                    });
-                                    for (var i = 0; i < nodes.length; i++) {
-                                        if (nodes[i]) {
-                                            activeNodes[nodes[i].id] = nodes[i];
-                                        }
+
+                        }
+                    } else {
+                        if (!subflowInstanceNodes[id]) {
+                            try {
+                                var nodes = createSubflow(flow.subflows[node.subflow] || global.subflows[node.subflow], node, flow.subflows, global.subflows, activeNodes);
+                                subflowInstanceNodes[id] = nodes.map(function (n) {
+                                    return n.id
+                                });
+                                for (var i = 0; i < nodes.length; i++) {
+                                    if (nodes[i]) {
+                                        activeNodes[nodes[i].id] = nodes[i];
                                     }
-                                } catch (err) {
-                                    console.log(err.stack)
                                 }
+                            } catch (err) {
+                                console.log(err.stack)
                             }
+                        }
                     }
                 }
             }
@@ -133,14 +146,14 @@ function Flow(global,flow) {
                     }
                 }
             }
-        }, node);
+        }, node, activeNodes);
     }
 
-    this.stop = function(stopList) {
-        return when.promise(function(resolve) {
+    this.stop = function (stopList) {
+        return when.promise(function (resolve) {
             var i;
             if (stopList) {
-                for (i=0;i<stopList.length;i++) {
+                for (i = 0; i < stopList.length; i++) {
                     if (subflowInstanceNodes[stopList[i]]) {
                         // The first in the list is the instance node we already
                         // know about
@@ -151,7 +164,7 @@ function Flow(global,flow) {
                 stopList = Object.keys(activeNodes);
             }
             var promises = [];
-            for (i=0;i<stopList.length;i++) {
+            for (i = 0; i < stopList.length; i++) {
                 var node = activeNodes[stopList[i]];
                 if (node) {
                     delete activeNodes[stopList[i]];
@@ -163,38 +176,38 @@ function Flow(global,flow) {
                         if (p) {
                             promises.push(p);
                         }
-                    } catch(err) {
+                    } catch (err) {
                         node.error(err);
                     }
                 }
             }
-            when.settle(promises).then(function() {
+            when.settle(promises).then(function () {
                 resolve();
             });
         });
     }
 
-    this.update = function(_global,_flow) {
+    this.update = function (_global, _flow) {
         global = _global;
         flow = _flow;
     }
 
-    this.getNode = function(id) {
+    this.getNode = function (id) {
         return activeNodes[id];
     }
 
-    this.getActiveNodes = function() {
+    this.getActiveNodes = function () {
         return activeNodes;
     }
 
-    this.handleStatus = function(node,statusMessage) {
+    this.handleStatus = function (node, statusMessage) {
         var targetStatusNodes = null;
         var reportingNode = node;
         var handled = false;
         while (reportingNode && !handled) {
             targetStatusNodes = statusNodeMap[reportingNode.z];
             if (targetStatusNodes) {
-                targetStatusNodes.forEach(function(targetStatusNode) {
+                targetStatusNodes.forEach(function (targetStatusNode) {
                     if (targetStatusNode.scope && targetStatusNode.scope.indexOf(node.id) === -1) {
                         return;
                     }
@@ -221,12 +234,12 @@ function Flow(global,flow) {
         }
     }
 
-    this.handleError = function(node,logMessage,msg) {
+    this.handleError = function (node, logMessage, msg) {
         var count = 1;
         if (msg && msg.hasOwnProperty("error")) {
             if (msg.error.hasOwnProperty("source")) {
                 if (msg.error.source.id === node.id) {
-                    count = msg.error.source.count+1;
+                    count = msg.error.source.count + 1;
                     if (count === 10) {
                         node.warn(Log._("nodes.flow.error-loop"));
                         return;
@@ -240,7 +253,7 @@ function Flow(global,flow) {
         while (throwingNode && !handled) {
             targetCatchNodes = catchNodeMap[throwingNode.z];
             if (targetCatchNodes) {
-                targetCatchNodes.forEach(function(targetCatchNode) {
+                targetCatchNodes.forEach(function (targetCatchNode) {
                     if (targetCatchNode.scope && targetCatchNode.scope.indexOf(throwingNode.id) === -1) {
                         return;
                     }
@@ -276,7 +289,7 @@ function Flow(global,flow) {
     }
 }
 
-function createNode(type,config) {
+function createNode(type, config) {
     var nn = null;
     var nt = typeRegistry.get(type);
     if (nt) {
@@ -284,36 +297,37 @@ function createNode(type,config) {
         delete conf.credentials;
         for (var p in conf) {
             if (conf.hasOwnProperty(p)) {
-                flowUtil.mapEnvVarProperties(conf,p);
+                flowUtil.mapEnvVarProperties(conf, p);
             }
         }
         try {
             nn = new nt(conf);
-        }
-        catch (err) {
+        } catch (err) {
             Log.log({
                 level: Log.ERROR,
-                id:conf.id,
+                id: conf.id,
                 type: type,
                 msg: err
             });
         }
     } else {
-        Log.error(Log._("nodes.flow.unknown-type", {type:type}));
+        Log.error(Log._("nodes.flow.unknown-type", {
+            type: type
+        }));
     }
     return nn;
 }
 
-function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
+function createSubflow(sf, sfn, subflows, globalSubflows, activeNodes) {
     //console.log("CREATE SUBFLOW",sf.id,sfn.id);
     var nodes = [];
     var node_map = {};
     var newNodes = [];
     var node;
     var wires;
-    var i,j,k;
+    var i, j, k;
 
-    var createNodeInSubflow = function(def) {
+    var createNodeInSubflow = function (def) {
         node = clone(def);
         var nid = redUtil.generateId();
         node_map[node.id] = node;
@@ -338,19 +352,19 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
 
     // Look for any catch/status nodes and update their scope ids
     // Update all subflow interior wiring to reflect new node IDs
-    for (i=0;i<newNodes.length;i++) {
+    for (i = 0; i < newNodes.length; i++) {
         node = newNodes[i];
         if (node.wires) {
             var outputs = node.wires;
-            for (j=0;j<outputs.length;j++) {
+            for (j = 0; j < outputs.length; j++) {
                 wires = outputs[j];
-                for (k=0;k<wires.length;k++) {
+                for (k = 0; k < wires.length; k++) {
                     outputs[j][k] = node_map[outputs[j][k]].id
                 }
             }
             if ((node.type === 'catch' || node.type === 'status') && node.scope) {
-                node.scope = node.scope.map(function(id) {
-                    return node_map[id]?node_map[id].id:""
+                node.scope = node.scope.map(function (id) {
+                    return node_map[id] ? node_map[id].id : ""
                 })
             } else {
                 for (var prop in node) {
@@ -375,25 +389,31 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
         wires: []
     }
     if (sf.in) {
-        subflowInstance.wires = sf.in.map(function(n) { return n.wires.map(function(w) { return node_map[w.id].id;})})
+        subflowInstance.wires = sf.in.map(function (n) {
+            return n.wires.map(function (w) {
+                return node_map[w.id].id;
+            })
+        })
         subflowInstance._originalWires = clone(subflowInstance.wires);
     }
     var subflowNode = new Node(subflowInstance);
 
-    subflowNode.on("input", function(msg) { this.send(msg);});
+    subflowNode.on("input", function (msg) {
+        this.send(msg);
+    });
 
 
     subflowNode._updateWires = subflowNode.updateWires;
 
-    subflowNode.updateWires = function(newWires) {
+    subflowNode.updateWires = function (newWires) {
         // Wire the subflow outputs
         if (sf.out) {
-            var node,wires,i,j;
+            var node, wires, i, j;
             // Restore the original wiring to the internal nodes
             subflowInstance.wires = clone(subflowInstance._originalWires);
-            for (i=0;i<sf.out.length;i++) {
+            for (i = 0; i < sf.out.length; i++) {
                 wires = sf.out[i].wires;
-                for (j=0;j<wires.length;j++) {
+                for (j = 0; j < wires.length; j++) {
                     if (wires[j].id != sf.id) {
                         node = node_map[wires[j].id];
                         if (node._originalWires) {
@@ -406,9 +426,9 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
             var modifiedNodes = {};
             var subflowInstanceModified = false;
 
-            for (i=0;i<sf.out.length;i++) {
+            for (i = 0; i < sf.out.length; i++) {
                 wires = sf.out[i].wires;
-                for (j=0;j<wires.length;j++) {
+                for (j = 0; j < wires.length; j++) {
                     if (wires[j].id === sf.id) {
                         subflowInstance.wires[wires[j].port] = subflowInstance.wires[wires[j].port].concat(newWires[i]);
                         subflowInstanceModified = true;
@@ -419,7 +439,7 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
                     }
                 }
             }
-            Object.keys(modifiedNodes).forEach(function(id) {
+            Object.keys(modifiedNodes).forEach(function (id) {
                 var node = modifiedNodes[id];
                 subflowNode.instanceNodes[id].updateWires(node.wires);
             });
@@ -434,9 +454,9 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
     // Wire the subflow outputs
     if (sf.out) {
         var modifiedNodes = {};
-        for (i=0;i<sf.out.length;i++) {
+        for (i = 0; i < sf.out.length; i++) {
             wires = sf.out[i].wires;
-            for (j=0;j<wires.length;j++) {
+            for (j = 0; j < wires.length; j++) {
                 if (wires[j].id === sf.id) {
                     // A subflow input wired straight to a subflow output
                     subflowInstance.wires[wires[j].port] = subflowInstance.wires[wires[j].port].concat(sfn.wires[i])
@@ -447,33 +467,33 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
                     if (!node._originalWires) {
                         node._originalWires = clone(node.wires);
                     }
-                    node.wires[wires[j].port] = (node.wires[wires[j].port]||[]).concat(sfn.wires[i]);
+                    node.wires[wires[j].port] = (node.wires[wires[j].port] || []).concat(sfn.wires[i]);
                 }
             }
         }
     }
 
     // Instantiate the nodes
-    for (i=0;i<newNodes.length;i++) {
+    for (i = 0; i < newNodes.length; i++) {
         node = newNodes[i];
         var type = node.type;
 
         var m = /^subflow:(.+)$/.exec(type);
         if (!m) {
-            var newNode = createNode(type,node);
+            var newNode = createNode(type, node);
             if (newNode) {
                 activeNodes[node.id] = newNode;
                 nodes.push(newNode);
             }
         } else {
             var subflowId = m[1];
-            nodes = nodes.concat(createSubflow(subflows[subflowId]||globalSubflows[subflowId],node,subflows,globalSubflows,activeNodes));
+            nodes = nodes.concat(createSubflow(subflows[subflowId] || globalSubflows[subflowId], node, subflows, globalSubflows, activeNodes));
         }
     }
 
     subflowNode.instanceNodes = {};
 
-    nodes.forEach(function(node) {
+    nodes.forEach(function (node) {
         subflowNode.instanceNodes[node.id] = node;
     });
     return nodes;
@@ -484,34 +504,36 @@ function createSubflow(sf,sfn,subflows,globalSubflows,activeNodes) {
 var path = require('path'),
     walk = require('walk');
 
-function findModules(opts,done, ctx){
-    var walker  = walk.walk(opts.folder, { followLinks: false }),
+function findModules(opts, done, ctx, activeNodes) {
+    var walker = walk.walk(opts.folder, {
+            followLinks: false
+        }),
         modules = [];
 
-    walker.on('file', function(root, stat, next) {
+    walker.on('file', function (root, stat, next) {
         var relative = path.join(root, stat.name),
-            current=path.join(path.dirname(require.main.filename), relative);
-            extname = path.extname(current);
+            current = path.join(path.dirname(require.main.filename), relative);
+        extname = path.extname(current);
 
-        if(extname === '.js' && (opts.filter === undefined || opts.filter(current))){
+        if (extname === '.js' && (opts.filter === undefined || opts.filter(current))) {
             var module = require(current);
-            var tmp= {};
-            tmp.id=stat.name;
-            tmp.module=module;
+            var tmp = {};
+            tmp.id = stat.name;
+            tmp.module = module;
             modules.push(tmp);
         }
 
         next();
     });
 
-    walker.on('end', function() {
-        done(modules, ctx);
+    walker.on('end', function () {
+        done(modules, ctx, activeNodes);
     });
 }
 
 
 module.exports = {
-    create: function(global,conf) {
-        return new Flow(global,conf);
+    create: function (global, conf) {
+        return new Flow(global, conf);
     }
 }

@@ -6,7 +6,7 @@ var fs = require('fs');
 var os = require('os');
 
 
-function compileThingML(node) {
+function compileThingML(node, callback, ctx) {
     var output = 'generated';
     var java;
 
@@ -67,7 +67,7 @@ function compileThingML(node) {
         } else {
             console.log('Done!');
             if (node.target.indexOf("arduino") >= 0) {
-                compileAndUpload(node);
+                compileAndUpload(node, callback, ctx);
             }
         }
     });
@@ -76,17 +76,7 @@ function compileThingML(node) {
 
 //This function calls Arduino ID to compile Arduino sketches
 // and to deploy them
-function compileAndUpload(node) {
-
-    /*if(node.libraries !== "") {
-        var tab = node.libraries.split(',');
-        for(var i in tab) {
-            var arduinoLibraries = spawn('/Applications/Arduino.app/Contents/MacOS/Arduino', [
-                '--install-library', tab[i]
-            ]);
-        }
-    }*/
-
+function compileAndUpload(node, callback, ctx) {
 
     //We Should install libaries first
     var path_to_ardui = "";
@@ -97,11 +87,11 @@ function compileAndUpload(node) {
     }
 
     var tab = JSON.parse(node.libraries);
-    installLibraries(node, path_to_ardui, tab, 0);
+    installLibraries(node, path_to_ardui, tab, 0, callback, ctx);
 
 }
 
-function installLibraries(node, path_to_ardui, tab, k) {
+function installLibraries(node, path_to_ardui, tab, k, callback, ctx) {
     if (node.libraries !== undefined && node.libraries !== "") {
         console.log(JSON.stringify(tab));
         if (k < tab.length) {
@@ -109,6 +99,14 @@ function installLibraries(node, path_to_ardui, tab, k) {
             var install = spawn(path_to_ardui, [
                 '--install-library', tab[k]
             ]);
+
+            install.stdout.setEncoding('utf8');
+            install.stdout.on('data', (data) => {
+                data.trim().split('\n').forEach(line => {
+                    console.log('[INFO]' + line);
+                });
+            });
+
             install.stderr.setEncoding('utf8');
             install.stderr.on('data', (data) => {
                 data.trim().split('\n').forEach(line => {
@@ -121,21 +119,21 @@ function installLibraries(node, path_to_ardui, tab, k) {
             });
 
             install.on('exit', (code) => {
-                console.log('Done!');
-                installLibraries(node, path_to_ardui, tab, k + 1);
+                console.log('[INFO] Installation of ' + tab[k] + ' Completed!');
+                installLibraries(node, path_to_ardui, tab, k + 1, callback, ctx);
             });
         } else {
-            upload(node, path_to_ardui);
+            upload(node, path_to_ardui, callback, ctx);
         }
 
     } else {
-        upload(node, path_to_ardui);
+        upload(node, path_to_ardui, callback, ctx);
     }
 
 }
 
 
-function upload(node, path_to_ardui) {
+function upload(node, path_to_ardui, callback, ctx) {
     var board = 'arduino:avr:' + node.ardtype;
     if (node.cpu.indexOf("") < 0) {
         board += +':cpu=' + node.cpu;
@@ -166,12 +164,12 @@ function upload(node, path_to_ardui) {
     });
 
     arduino.on('exit', (code) => {
-        console.log('Done!');
-        //TODO: add feedback process done
+        console.log('[INFO] Upload completed!: ' + node.name);
+        callback(node, ctx);
     });
 }
 
 
-exports.deploy = function (node) {
-    compileThingML(node);
+exports.deploy = function (node, callback, ctx) {
+    compileThingML(node, callback, ctx);
 };
